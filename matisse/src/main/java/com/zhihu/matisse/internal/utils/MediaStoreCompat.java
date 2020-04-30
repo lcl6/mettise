@@ -16,6 +16,7 @@
 package com.zhihu.matisse.internal.utils;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -76,35 +77,50 @@ public class MediaStoreCompat {
         if (captureIntent.resolveActivity(context.getPackageManager()) != null) {
             File photoFile = null;
             try {
-                photoFile = createImageFile();
+                if(Build.VERSION.SDK_INT<Build.VERSION_CODES.Q){
+                    photoFile = createImageFile();
+                    if (photoFile != null) {
+                        mCurrentPhotoPath = photoFile.getAbsolutePath();
+                        mCurrentPhotoUri = FileProvider.getUriForFile(mContext.get(),
+                                mCaptureStrategy.authority, photoFile);
+                    }
+                }else {
+                    mCurrentPhotoUri = createImageUri();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            if (photoFile != null) {
-                mCurrentPhotoPath = photoFile.getAbsolutePath();
-                mCurrentPhotoUri = FileProvider.getUriForFile(mContext.get(),
-                        mCaptureStrategy.authority, photoFile);
-                captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCurrentPhotoUri);
-                captureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                    List<ResolveInfo> resInfoList = context.getPackageManager()
-                            .queryIntentActivities(captureIntent, PackageManager.MATCH_DEFAULT_ONLY);
-                    for (ResolveInfo resolveInfo : resInfoList) {
-                        String packageName = resolveInfo.activityInfo.packageName;
-                        context.grantUriPermission(packageName, mCurrentPhotoUri,
-                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    }
-                }
-                if (mFragment != null) {
-                    mFragment.get().startActivityForResult(captureIntent, requestCode);
-                } else {
-                    mContext.get().startActivityForResult(captureIntent, requestCode);
+            captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCurrentPhotoUri);
+            captureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                List<ResolveInfo> resInfoList = context.getPackageManager()
+                        .queryIntentActivities(captureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    context.grantUriPermission(packageName, mCurrentPhotoUri,
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 }
             }
+            if (mFragment != null) {
+                mFragment.get().startActivityForResult(captureIntent, requestCode);
+            } else {
+                mContext.get().startActivityForResult(captureIntent, requestCode);
+            }
+
         }
     }
-
+    /**
+     * 创建图片地址uri,用于保存拍照后的照片 Android 10以后使用这种方法
+     */
+    private Uri createImageUri() {
+        String status = Environment.getExternalStorageState();
+        // 判断是否有SD卡,优先使用SD卡存储,当没有SD卡时使用手机存储
+        if (status.equals(Environment.MEDIA_MOUNTED)) {
+            return  mContext.get().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
+        } else {
+            return  mContext.get().getContentResolver().insert(MediaStore.Images.Media.INTERNAL_CONTENT_URI, new ContentValues());
+        }
+    }
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private File createImageFile() throws IOException {
         // Create an image file name

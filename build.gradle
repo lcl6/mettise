@@ -19,9 +19,15 @@ buildscript {
     repositories {
         jcenter()
         google()
+        maven { url 'https://maven.google.com' }
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/'}
+        maven { url'https://maven.aliyun.com/repository/public/' }
+        maven { url'https://maven.aliyun.com/repository/google/' }
+        maven { url'https://maven.aliyun.com/repository/jcenter/' }
+        maven { url'https://maven.aliyun.com/repository/central/' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.1'
+        classpath 'com.android.tools.build:gradle:3.6.2'
         classpath 'com.novoda:bintray-release:0.9.1'
     }
 }
@@ -30,6 +36,12 @@ allprojects {
     repositories {
         jcenter()
         google()
+        maven { url 'https://maven.google.com' }
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/'}
+        maven { url'https://maven.aliyun.com/repository/public/' }
+        maven { url'https://maven.aliyun.com/repository/google/' }
+        maven { url'https://maven.aliyun.com/repository/jcenter/' }
+        maven { url'https://maven.aliyun.com/repository/central/' }
     }
 }
 
